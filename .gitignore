@@ -1,0 +1,28 @@
+# Go build outputs
+/limbs
+/limbs.exe
+/bin/
+/dist/
+*.test
+*.out
+coverage.out
+
+# Go workspace/cache files
+go.work
+go.work.sum
+
+# GoReleaser local artifacts
+/dist-*/
+
+# Editor/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+._*
+.Spotlight-V100
+.Trashes
