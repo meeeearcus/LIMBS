@@ -11,6 +11,7 @@ type Config struct {
 	SourceMount  string
 	ProjectsRoot string
 	SamplesRoot  string
+	USBDrive     string
 	ProjectName  string
 	ProjectFile  string
 	DestRoot     string

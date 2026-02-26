@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LIMBS GUI</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>LIMBS GUI</h1>
+    <p class="muted">Local web wrapper for <code>limbs export</code>.</p>
+
+    <form id="exportForm">
+      <div class="grid">
+        <label>Project Name<input name="projectName" placeholder="MYPROJECT" /></label>
+        <label>Project File<input name="projectFile" placeholder="/path/to/project.json" /></label>
+        <label>Destination Root<input name="destRoot" placeholder="/path/to/exports" required /></label>
+        <label>Source Mount<input name="sourceMount" placeholder="/Volumes/S-4" /></label>
+        <label>Projects Root<input name="projectsRoot" placeholder="/Volumes/S-4/PROJECTS" /></label>
+        <label>Samples Root<input name="samplesRoot" placeholder="/Volumes/S-4/SAMPLES" /></label>
+        <label>USB Drive Root<input name="usbDrive" placeholder="/media/user/S4_USB" /></label>
+        <label>Limbs Root<input name="limbsRoot" placeholder="SAMPLES/LIMBS" /></label>
+        <label class="inline"><input type="checkbox" name="zip" /> Create Zip</label>
+        <label class="inline"><input type="checkbox" name="allowMissing" checked /> Allow Missing</label>
+      </div>
+      <p id="guidance" class="muted"></p>
+      <p class="muted">Command preview: <code id="preview"></code></p>
+      <button id="runButton" type="submit">Run Export</button>
+    </form>
+
+    <section id="status"></section>
+    <section id="error" class="error"></section>
+    <section id="result"></section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

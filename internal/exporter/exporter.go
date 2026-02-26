@@ -20,6 +20,7 @@ import (
 type MissingSample struct {
 	ReferencePath string
 	ResolvedPath  string
+	Reason        string
 }
 
 type Collision struct {
@@ -28,11 +29,11 @@ type Collision struct {
 }
 
 type Stats struct {
-	ReferencesFound int
+	ReferencesFound  int
 	UniqueReferences int
-	SamplesCopied   int
-	MissingSamples  []MissingSample
-	Collisions      []Collision
+	SamplesCopied    int
+	MissingSamples   []MissingSample
+	Collisions       []Collision
 }
 
 type Result struct {
@@ -67,10 +68,10 @@ func Run(cfg config.Config) (Result, error) {
 
 	scan := scanner.CollectSampleRefs(root)
 	stats := Stats{
-		ReferencesFound: len(scan.OrderedRefs),
+		ReferencesFound:  len(scan.OrderedRefs),
 		UniqueReferences: len(scan.UniqueRefs),
-		MissingSamples:  make([]MissingSample, 0),
-		Collisions:      make([]Collision, 0),
+		MissingSamples:   make([]MissingSample, 0),
+		Collisions:       make([]Collision, 0),
 	}
 
 	assignments := map[string]assignment{}
@@ -81,32 +82,34 @@ func Run(cfg config.Config) (Result, error) {
 	sort.Strings(uniqueRefs)
 
 	for _, ref := range uniqueRefs {
-		resolvedPath := resolver.ResolveVirtualSamplePath(cfg.SamplesRoot, ref)
-		if resolvedPath == "" {
+		resolution := resolver.ResolveVirtualSamplePath(cfg.SamplesRoot, cfg.USBDrive, ref)
+		if resolution.ResolvedPath == "" {
 			stats.MissingSamples = append(stats.MissingSamples, MissingSample{
 				ReferencePath: ref,
-				ResolvedPath:  "",
+				ResolvedPath:  resolution.ResolvedPath,
+				Reason:        resolution.Reason,
 			})
 			continue
 		}
 
-		if _, err := os.Stat(resolvedPath); err != nil {
+		if _, err := os.Stat(resolution.ResolvedPath); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				stats.MissingSamples = append(stats.MissingSamples, MissingSample{
 					ReferencePath: ref,
-					ResolvedPath:  resolvedPath,
+					ResolvedPath:  resolution.ResolvedPath,
+					Reason:        "file not found",
 				})
 				continue
 			}
 			return Result{}, err
 		}
 
-		if existing, exists := assignments[resolvedPath]; exists {
+		if existing, exists := assignments[resolution.ResolvedPath]; exists {
 			renameMap[ref] = existing.virtualPath
 			continue
 		}
 
-		base := filepath.Base(resolvedPath)
+		base := filepath.Base(resolution.ResolvedPath)
 		count := nameCounts[base]
 		nameCounts[base] = count + 1
 		assigned := base
@@ -115,14 +118,14 @@ func Run(cfg config.Config) (Result, error) {
 			stem := strings.TrimSuffix(base, ext)
 			assigned = fmt.Sprintf("%s__%d%s", stem, count+1, ext)
 			stats.Collisions = append(stats.Collisions, Collision{
-				SourcePath:   resolvedPath,
+				SourcePath:   resolution.ResolvedPath,
 				AssignedName: assigned,
 			})
 		}
 
 		virtual := resolver.BuildVirtualLimbsPath(cfg.ProjectName, assigned)
-		assignments[resolvedPath] = assignment{
-			srcPath:     resolvedPath,
+		assignments[resolution.ResolvedPath] = assignment{
+			srcPath:     resolution.ResolvedPath,
 			fileName:    assigned,
 			virtualPath: virtual,
 		}

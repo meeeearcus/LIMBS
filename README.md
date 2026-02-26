@@ -73,6 +73,29 @@ limbs export \
   --dest-root /path/to/exports
 ```
 
+## Local Web UI
+
+LIMBS also includes a lightweight local GUI wrapper around `limbs export`.
+
+Launch GUI:
+
+```bash
+./limbs gui
+```
+
+The UI runs only on localhost (`127.0.0.1`) and auto-opens in your default browser.
+
+Optional flags:
+
+- `--port <n>`: set a specific port (default auto-selects a free port)
+- `--no-open`: do not auto-open browser
+
+Example:
+
+```bash
+./limbs gui --port 8080 --no-open
+```
+
 ## Cross-platform usage
 
 `--source-mount` is the base path that contains both `PROJECTS` and `SAMPLES` on your mounted Torso S-4 drive.
