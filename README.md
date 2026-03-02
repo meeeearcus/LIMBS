@@ -2,10 +2,18 @@
 
 Limbs is a CLI tool that collects referenced samples, rewrites `project.json` sample paths, and creates a zip archive for easy sharing.
 
-## Known Issues
+## Firmware Compatibility
 
-- Issue uncovered with different directory structure across firmware versions (e.g., 2.0.4 vs 2.1.*) causing issues with finding samples and rewriting project.json paths.
-- Does not handle sample content from USB drives
+LIMBS now uses top-level `project.json` `version` to decide rewritten `library_sample_path` roots and minimum firmware guidance:
+
+- `v11` -> rewrites to `/browser/samples/02_USER/LIMBS/...` -> minimum firmware `2.0.4+`
+- `v13` -> rewrites to `/tmp/S-4/browser/SAMPLES/02_USER/LIMBS/...` -> minimum firmware `2.1.3+`
+- Unknown versions -> warning + assume v11-compatible rewrite mode (`2.0.4+`)
+
+Export names include firmware suffixes:
+
+- Folder: `<project>_fw<min-firmware>_export`
+- Zip: `<project>_fw<min-firmware>.zip`
 
 ## Install
 
@@ -42,11 +50,13 @@ go build -o limbs.exe .\cmd\limbs
 - Copies full project directory contents into `PROJECTS/<project>-LIMB.s4project` in the destination folder
 - Copies referenced samples into a flat directory: `SAMPLES/LIMBS/<project>/` in the destination folder
 - Rewrites every `library_sample_path` to:
-  - `/browser/samples/02_USER/LIMBS/<project>/<filename>`
+  - Firmware-aware root based on top-level JSON `version`:
+  - `v11`: `/browser/samples/02_USER/LIMBS/<project>/<filename>`
+  - `v13`: `/tmp/S-4/browser/SAMPLES/02_USER/LIMBS/<project>/<filename>`
 - Handles flattened filename collisions with suffixing:
   - `kick.wav`, `kick__2.wav`, `kick__3.wav`, ...
 - Warns on missing samples by default (`--allow-missing=true`)
-- With the `--zip` flag it creates `<project>.zip` containing `PROJECTS/` and `SAMPLES/` at archive root
+- With the `--zip` flag it creates `<project>_fw<min-firmware>.zip` containing `PROJECTS/` and `SAMPLES/` at archive root
 - Adds `IMPORT-README.md` to each export with end-user import instructions
 
 ## Defaults
