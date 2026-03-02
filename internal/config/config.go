@@ -3,7 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -23,15 +25,24 @@ func Resolve(cfg Config) (Config, error) {
 	if strings.TrimSpace(cfg.DestRoot) == "" {
 		return Config{}, errors.New("--dest-root is required")
 	}
-	if strings.TrimSpace(cfg.SourceMount) == "" {
-		cfg.SourceMount = "/Volumes/S-4"
+	sourceMount := strings.TrimSpace(cfg.SourceMount)
+	projectsRoot := strings.TrimSpace(cfg.ProjectsRoot)
+	samplesRoot := strings.TrimSpace(cfg.SamplesRoot)
+
+	if sourceMount == "" && projectsRoot == "" && samplesRoot == "" {
+		sourceMount = defaultSourceMount()
 	}
-	if strings.TrimSpace(cfg.ProjectsRoot) == "" {
-		cfg.ProjectsRoot = filepath.Join(cfg.SourceMount, "PROJECTS")
+	cfg.SourceMount = sourceMount
+
+	if projectsRoot == "" && sourceMount != "" {
+		projectsRoot = filepath.Join(sourceMount, "PROJECTS")
 	}
-	if strings.TrimSpace(cfg.SamplesRoot) == "" {
-		cfg.SamplesRoot = filepath.Join(cfg.SourceMount, "SAMPLES")
+	if samplesRoot == "" && sourceMount != "" {
+		samplesRoot = filepath.Join(sourceMount, "SAMPLES")
 	}
+	cfg.ProjectsRoot = projectsRoot
+	cfg.SamplesRoot = samplesRoot
+
 	if strings.TrimSpace(cfg.LimbsRoot) == "" {
 		cfg.LimbsRoot = "SAMPLES/LIMBS"
 	}
@@ -46,6 +57,9 @@ func Resolve(cfg Config) (Config, error) {
 	}
 
 	if projectFile == "" {
+		if strings.TrimSpace(cfg.ProjectsRoot) == "" {
+			return Config{}, errors.New("--projects-root could not be derived; provide --source-mount or --projects-root")
+		}
 		cfg.ProjectFile = filepath.Join(cfg.ProjectsRoot, projectName+".s4project", "project.json")
 	} else {
 		cfg.ProjectFile = projectFile
@@ -60,4 +74,32 @@ func Resolve(cfg Config) (Config, error) {
 	}
 	cfg.ProjectName = projectName
 	return cfg, nil
+}
+
+func defaultSourceMount() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return "/Volumes/S-4"
+	case "linux":
+		user := strings.TrimSpace(os.Getenv("USER"))
+		if user == "" {
+			return "/media/S-4"
+		}
+		primary := filepath.Join("/media", user, "S-4")
+		if pathExists(primary) {
+			return primary
+		}
+		fallback := filepath.Join("/run/media", user, "S-4")
+		if pathExists(fallback) {
+			return fallback
+		}
+		return primary
+	default:
+		return ""
+	}
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
