@@ -20,7 +20,7 @@ func TestRun_V11UsesLegacyRewriteAndNaming(t *testing.T) {
 		t.Fatalf("write sample: %v", err)
 	}
 
-	projectFile := writeProject(t, tmp, "MYPROJECT", "v11", "/browser/samples/02_USER/BOUNCES/DX/kick.wav")
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v11", []string{"/browser/samples/02_USER/BOUNCES/DX/kick.wav"})
 	res, err := Run(config.Config{
 		ProjectName:  "MYPROJECT",
 		ProjectFile:  projectFile,
@@ -75,7 +75,7 @@ func TestRun_V13UsesNewRewriteAndNaming(t *testing.T) {
 		t.Fatalf("write sample: %v", err)
 	}
 
-	projectFile := writeProject(t, tmp, "MYPROJECT", "v13", "/tmp/S-4/browser/SAMPLES/02_USER/BOUNCES/DX/kick.wav")
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v13", []string{"/tmp/S-4/browser/SAMPLES/02_USER/BOUNCES/DX/kick.wav"})
 	res, err := Run(config.Config{
 		ProjectName:  "MYPROJECT",
 		ProjectFile:  projectFile,
@@ -114,7 +114,7 @@ func TestRun_UnknownVersionFallsBackToLegacyWithWarning(t *testing.T) {
 		t.Fatalf("write sample: %v", err)
 	}
 
-	projectFile := writeProject(t, tmp, "MYPROJECT", "v12", "/browser/samples/02_USER/BOUNCES/DX/kick.wav")
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v12", []string{"/browser/samples/02_USER/BOUNCES/DX/kick.wav"})
 	res, err := Run(config.Config{
 		ProjectName:  "MYPROJECT",
 		ProjectFile:  projectFile,
@@ -142,7 +142,94 @@ func TestRun_UnknownVersionFallsBackToLegacyWithWarning(t *testing.T) {
 		t.Fatalf("read README: %v", err)
 	}
 	if !strings.Contains(string(readme), "Assumption: ") {
-		t.Fatalf("expected README assumption line for unknown version:\\n%s", string(readme))
+		t.Fatalf("expected README assumption line for unknown version:\n%s", string(readme))
+	}
+}
+
+func TestRun_USBDriveMissingRootProducesReason(t *testing.T) {
+	tmp := t.TempDir()
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v13", []string{"/tmp/S-4/browser/SAMPLES/03_USB_DRIVE/SAMPLES/INSTRUMENTS/DRONE_1.wav"})
+
+	res, err := Run(config.Config{
+		ProjectName:  "MYPROJECT",
+		ProjectFile:  projectFile,
+		DestRoot:     filepath.Join(tmp, "out"),
+		SamplesRoot:  filepath.Join(tmp, "SAMPLES"),
+		AllowMissing: true,
+	})
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if len(res.Stats.MissingSamples) != 1 {
+		t.Fatalf("expected 1 missing sample, got %d", len(res.Stats.MissingSamples))
+	}
+	if res.Stats.MissingSamples[0].Reason != "usb drive path not configured (--usb-drive)" {
+		t.Fatalf("unexpected reason: %q", res.Stats.MissingSamples[0].Reason)
+	}
+}
+
+func TestRun_USBDriveWithRootCopiesSample(t *testing.T) {
+	tmp := t.TempDir()
+	usbRoot := filepath.Join(tmp, "usb")
+	if err := os.MkdirAll(filepath.Join(usbRoot, "SAMPLES", "INSTRUMENTS"), 0o755); err != nil {
+		t.Fatalf("mkdir usb sample dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(usbRoot, "SAMPLES", "INSTRUMENTS", "DRONE_1.wav"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("write usb sample: %v", err)
+	}
+
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v13", []string{"/tmp/S-4/browser/SAMPLES/03_USB_DRIVE/SAMPLES/INSTRUMENTS/DRONE_1.wav"})
+	res, err := Run(config.Config{
+		ProjectName:  "MYPROJECT",
+		ProjectFile:  projectFile,
+		DestRoot:     filepath.Join(tmp, "out"),
+		SamplesRoot:  filepath.Join(tmp, "SAMPLES"),
+		USBDrive:     usbRoot,
+		AllowMissing: true,
+	})
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if res.Stats.SamplesCopied != 1 {
+		t.Fatalf("expected 1 copied sample, got %d", res.Stats.SamplesCopied)
+	}
+}
+
+func TestRun_MixedUserAndUSBRefs(t *testing.T) {
+	tmp := t.TempDir()
+	samplesRoot := filepath.Join(tmp, "SAMPLES")
+	if err := os.MkdirAll(filepath.Join(samplesRoot, "BOUNCES", "DX"), 0o755); err != nil {
+		t.Fatalf("mkdir user samples: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(samplesRoot, "BOUNCES", "DX", "kick.wav"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("write user sample: %v", err)
+	}
+
+	usbRoot := filepath.Join(tmp, "usb")
+	if err := os.MkdirAll(filepath.Join(usbRoot, "SAMPLES", "INSTRUMENTS"), 0o755); err != nil {
+		t.Fatalf("mkdir usb dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(usbRoot, "SAMPLES", "INSTRUMENTS", "DRONE_1.wav"), []byte("x"), 0o644); err != nil {
+		t.Fatalf("write usb sample: %v", err)
+	}
+
+	projectFile := writeProjectWithRefs(t, tmp, "MYPROJECT", "v13", []string{
+		"/browser/samples/02_USER/BOUNCES/DX/kick.wav",
+		"/tmp/S-4/browser/SAMPLES/03_USB_DRIVE/SAMPLES/INSTRUMENTS/DRONE_1.wav",
+	})
+	res, err := Run(config.Config{
+		ProjectName:  "MYPROJECT",
+		ProjectFile:  projectFile,
+		DestRoot:     filepath.Join(tmp, "out"),
+		SamplesRoot:  samplesRoot,
+		USBDrive:     usbRoot,
+		AllowMissing: true,
+	})
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if res.Stats.SamplesCopied != 2 {
+		t.Fatalf("expected 2 copied samples, got %d", res.Stats.SamplesCopied)
 	}
 }
 
@@ -163,19 +250,22 @@ func TestDetectPathMode(t *testing.T) {
 	}
 }
 
-func writeProject(t *testing.T, root, projectName, version, ref string) string {
+func writeProjectWithRefs(t *testing.T, root, projectName, version string, refs []string) string {
 	t.Helper()
 	projectDir := filepath.Join(root, "PROJECTS", projectName+".s4project")
 	if err := os.MkdirAll(projectDir, 0o755); err != nil {
 		t.Fatalf("mkdir project dir: %v", err)
 	}
 
+	tracks := make([]any, 0, len(refs))
+	for _, ref := range refs {
+		tracks = append(tracks, map[string]any{"library_sample_path": ref})
+	}
+
 	payload := map[string]any{
 		"version": version,
 		"data": map[string]any{
-			"tracks": []any{
-				map[string]any{"library_sample_path": ref},
-			},
+			"tracks": tracks,
 		},
 	}
 	b, err := json.Marshal(payload)
