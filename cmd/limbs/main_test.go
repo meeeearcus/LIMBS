@@ -15,9 +15,9 @@ func TestParseExportFlags_HelpShowsRichUsage(t *testing.T) {
 
 	assertContainsAll(t, output,
 		"Basic Options:",
-		"Advanced Options:",
-		"Firmware-Aware Rewrite:",
-		"Platform Mount Defaults:",
+		"Advanced Options (optional):",
+		"OS-Specific Mount Defaults:",
+		"USB example mapping:",
 	)
 }
 
@@ -28,9 +28,20 @@ func TestParseExportFlags_InvalidFlagShowsRichUsage(t *testing.T) {
 
 	assertContainsAll(t, output,
 		"LIMBS - An exporter for Torso S-4 Projects",
-		"Usage:",
+		"Basic Usage (macOS/Linux):",
+		"Basic Usage (Windows):",
 		"Basic Options:",
 	)
+}
+
+func TestParseExportFlags_USBDriveParses(t *testing.T) {
+	cfg, err := parseExportFlags([]string{"--project-name", "MYPROJECT", "--dest-root", "/tmp/out", "--usb-drive", "/Volumes/MY_USB"})
+	if err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+	if cfg.USBDrive != "/Volumes/MY_USB" {
+		t.Fatalf("unexpected usb drive path: %q", cfg.USBDrive)
+	}
 }
 
 func TestPrintRootHelpExportOnly(t *testing.T) {
@@ -47,6 +58,24 @@ func TestPrintRootHelpExportOnly(t *testing.T) {
 	if strings.Contains(out, "gui") {
 		t.Fatalf("root help should not mention gui command")
 	}
+}
+
+func TestPrintExportHelp_IncludesUSBGuidance(t *testing.T) {
+	var buf bytes.Buffer
+	printExportHelp(&buf)
+	out := buf.String()
+
+	assertContainsAll(t, out,
+		"--usb-drive <path>",
+		"03_USB_DRIVE",
+		"EXAMPLE.wav",
+		"On Windows set explicitly",
+		"Full PROJECTS path override",
+		"Full SAMPLES path override",
+		"Effective location: <dest-root>/<project-name>_..._export/<limbs-root>/<project-name>/",
+		"OS-Specific Mount Defaults:",
+		"Windows: no fixed default; set --source-mount (e.g. E:\\)",
+	)
 }
 
 func captureStderr(t *testing.T, fn func()) string {

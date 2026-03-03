@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestResolveVirtualSamplePath_LegacyAndNewRoots(t *testing.T) {
+func TestResolveVirtualSamplePath_UserPaths(t *testing.T) {
 	samplesRoot := filepath.Join("root", "SAMPLES")
 
 	tests := []struct {
@@ -24,12 +24,47 @@ func TestResolveVirtualSamplePath_LegacyAndNewRoots(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ResolveVirtualSamplePath(samplesRoot, tc.ref)
+			got := ResolveVirtualSamplePath(samplesRoot, "", tc.ref)
 			want := filepath.Join(samplesRoot, "BOUNCES", "DX", "kick.wav")
-			if got != want {
-				t.Fatalf("expected %q, got %q", want, got)
+			if got.ResolvedPath != want {
+				t.Fatalf("expected %q, got %q", want, got.ResolvedPath)
+			}
+			if got.Reason != "" {
+				t.Fatalf("expected empty reason, got %q", got.Reason)
 			}
 		})
+	}
+}
+
+func TestResolveVirtualSamplePath_USBDrive(t *testing.T) {
+	usbRoot := filepath.Join("mnt", "usb")
+	got := ResolveVirtualSamplePath("", usbRoot, "/tmp/S-4/browser/SAMPLES/03_USB_DRIVE/MyFolder/DRONE_1.wav")
+	want := filepath.Join(usbRoot, "MyFolder", "DRONE_1.wav")
+	if got.ResolvedPath != want {
+		t.Fatalf("expected %q, got %q", want, got.ResolvedPath)
+	}
+	if got.Namespace != NamespaceUSBDrive {
+		t.Fatalf("unexpected namespace: %q", got.Namespace)
+	}
+}
+
+func TestResolveVirtualSamplePath_USBMissingRoot(t *testing.T) {
+	got := ResolveVirtualSamplePath("", "", "/browser/samples/03_USB_DRIVE/SAMPLES/INSTRUMENTS/DRONE_1.wav")
+	if got.ResolvedPath != "" {
+		t.Fatalf("expected empty resolved path, got %q", got.ResolvedPath)
+	}
+	if got.Reason != "usb drive path not configured (--usb-drive)" {
+		t.Fatalf("unexpected reason: %q", got.Reason)
+	}
+}
+
+func TestResolveVirtualSamplePath_Unrecognized(t *testing.T) {
+	got := ResolveVirtualSamplePath("", "", "/tmp/other/path.wav")
+	if got.ResolvedPath != "" {
+		t.Fatalf("expected empty resolved path, got %q", got.ResolvedPath)
+	}
+	if got.Reason != "unrecognized library_sample_path format" {
+		t.Fatalf("unexpected reason: %q", got.Reason)
 	}
 }
 
