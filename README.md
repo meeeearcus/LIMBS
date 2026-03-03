@@ -79,27 +79,29 @@ go build -o limbs.exe .\cmd\limbs
 ```
 
 ## Options
+```bash
 Required:
-  `--dest-root <dir>`
+  --dest-root <dir>
   Exactly one of:
-    `--project-name <name>`
-    `--project-file <path>`
+    --project-name <name>
+    --project-file <path>
 
 Basic Options:
-  `--project-name <name>`   Project name without .s4project suffix
-  `--project-file <path>`   Path to project.json
-  `--dest-root <dir>`       Destination root directory for export
-  `--zip`                   Create zip archive after export
-  `--allow-missing`         Continue export with warnings when samples are missing (default: true)
+  --project-name <name>   Project name without .s4project suffix
+  --project-file <path>   Path to project.json
+  --dest-root <dir>       Destination root directory for export
+  --zip                   Create zip archive after export
+  --allow-missing         Continue export with warnings when samples are missing (default: true)
 
 Advanced Options:
-  `--source-mount <path>`   Base S-4 mount path; default may apply on macOS/Linux
+  --source-mount <path>   Base S-4 mount path; default may apply on macOS/Linux
                            On Windows set explicitly (e.g. E:\) unless both roots are set
-  `--projects-root <path>`  Full PROJECTS path override
-  `--samples-root <path>`   Full SAMPLES path override 
-  `--usb-drive <path>`      Host root for S-4 03_USB_DRIVE namespace
-  `--limbs-root <path>`     Export-relative sample path (default: `SAMPLES/LIMBS`)
-                           Effective location: `<dest-root>/<project>_..._export/<limbs-root>/<project>/`
+  --projects-root <path>  Full PROJECTS path override
+  --samples-root <path>   Full SAMPLES path override 
+  --usb-drive <path>      Host root for S-4 03_USB_DRIVE namespace
+  --limbs-root <path>     Export-relative sample path (default: SAMPLES/LIMBS)
+                           Effective location: <dest-root>/<project>_..._export/<limbs-root>/<project>/
+```
 
 ## Usage (macOS/Linux)
 First attach your S-4 in USB mass storage mode to your computer.
@@ -157,15 +159,17 @@ Example:
 ```
 
 ## More Examples
+```
 Assume default mounts, provide a destination and create a zip:
-  `limbs export --project-name MYPROJECT --dest-root "$HOME/limbs-exports" --zip`
+  limbs export --project-name MYPROJECT --dest-root "$HOME/limbs-exports" --zip
 Provide a specific project file location and destination:
-  `limbs export --project-file /Volumes/S-4/PROJECTS/MYPROJECT.s4project/project.json --dest-root "$HOME/limbs-exports"`
+  limbs export --project-file /Volumes/S-4/PROJECTS/MYPROJECT.s4project/project.json --dest-root "$HOME/limbs-exports"
 Provide a project name, project and sample source locations by setting projects-root and samples-root, and destination:
-  `limbs export --project-name MYPROJECT --projects-root /path/to/S-4/PROJECTS --samples-root /path/to/S-4/SAMPLES --dest-root "$HOME/limbs-exports"`
+  limbs export --project-name MYPROJECT --projects-root /path/to/S-4/PROJECTS --samples-root /path/to/S-4/SAMPLES --dest-root "$HOME/limbs-exports"
 Provide a project file, USB sample drive and destination root:
-  `limbs export --project-file /Volumes/S-4/PROJECTS/MYPROJECT.s4project/project.json --usb-drive /Volumes/MY_USB --dest-root "$HOME/limbs-exports"`
+  limbs export --project-file /Volumes/S-4/PROJECTS/MYPROJECT.s4project/project.json --usb-drive /Volumes/MY_USB --dest-root "$HOME/limbs-exports"
 Provide project name, its a source location, destination , and create a zip:
-  `limbs export --project-name MYPROJECT --source-mount "/media/$USER/S-4" --dest-root "$HOME/limbs-exports" --zip`
+  limbs export --project-name MYPROJECT --source-mount "/media/$USER/S-4" --dest-root "$HOME/limbs-exports" --zip
 Provide project name, its a source location, destination , and create a zip (Windows):
-  `limbs export --project-name MYPROJECT --source-mount E:\ --dest-root "$HOME\Desktop\limbs-exports" --zip`
+  limbs export --project-name MYPROJECT --source-mount E:\ --dest-root "$HOME\Desktop\limbs-exports" --zip
+```
